@@ -37,8 +37,22 @@ def pickle_dump_process(dfg_nodes, store_pdg):
 
     pickle.dump(dfg_nodes, open(store_pdg, 'wb'))
 
+def store_representation(input_file, data, path):
+    if path is not None:
+        store_pdg = os.path.join(path, os.path.basename(input_file.replace('.js', '')))
+        # pickle.dump(dfg_nodes, open(store_pdg, 'wb'))
+        # I don't know why, but some PDGs lead to Segfault, this way it does not kill the
+        # current process at least
+        p = Process(target=pickle_dump_process, args=(data, store_pdg))
+        p.start()
+        p.join()
+        if p.exitcode != 0:
+            logging.error('Something wrong occurred to pickle the PDG of %s', store_pdg)
+            if os.path.isfile(store_pdg) and os.stat(store_pdg).st_size == 0:
+                os.remove(store_pdg)
 
-def get_data_flow(input_file, benchmarks, store_pdgs=None, check_var=False,
+
+def get_data_flow(input_file, benchmarks, level="pdg", store_pdgs=None, check_var=False,
                   save_path_ast=False, save_path_cfg=False, save_path_pdg=False):
     """
         Produces the PDG of a given file.
@@ -49,6 +63,10 @@ def get_data_flow(input_file, benchmarks, store_pdgs=None, check_var=False,
             Path of the file to study.
         - benchmarks: dict
             Contains the different microbenchmarks. Should be empty.
+        - level: string
+            pdg --> Produces the PDG;
+            cfg --> Produces the CFG;
+            ast --> Produces the AST;
         - store_pdgs: str
             Path of the folder to store the PDG in.
             Or None to pursue without storing it.
@@ -82,11 +100,15 @@ def get_data_flow(input_file, benchmarks, store_pdgs=None, check_var=False,
         # ast_nodes = search_dynamic(ast_nodes)  # Tried to handle dynamically generated JS
         benchmarks['AST'] = timeit.default_timer() - start
         start = micro_benchmark('Successfully produced the AST in', timeit.default_timer() - start)
+        if level == "ast":
+            return store_representation(input_file, ast_nodes, store_pdgs)
         if save_path_ast is not False:
             draw_ast(ast_nodes, attributes=True, save_path=save_path_ast)
         cfg_nodes = build_cfg(ast_nodes)
         benchmarks['CFG'] = timeit.default_timer() - start
         start = micro_benchmark('Successfully produced the CFG in', timeit.default_timer() - start)
+        if level == "cfg":
+            return store_representation(input_file, cfg_nodes, store_pdgs)
         if save_path_cfg is not False:
             draw_cfg(cfg_nodes, attributes=True, save_path=save_path_cfg)
         unknown_var = []
@@ -105,28 +127,30 @@ def get_data_flow(input_file, benchmarks, store_pdgs=None, check_var=False,
             return unknown_var
         benchmarks['PDG'] = timeit.default_timer() - start
         micro_benchmark('Successfully produced the PDG in', timeit.default_timer() - start)
-        if store_pdgs is not None:
-            store_pdg = os.path.join(store_pdgs, os.path.basename(input_file.replace('.js', '')))
-            # pickle.dump(dfg_nodes, open(store_pdg, 'wb'))
-            # I don't know why, but some PDGs lead to Segfault, this way it does not kill the
-            # current process at least
-            p = Process(target=pickle_dump_process, args=(dfg_nodes, store_pdg))
-            p.start()
-            p.join()
-            if p.exitcode != 0:
-                logging.error('Something wrong occurred to pickle the PDG of %s', store_pdg)
-                if os.path.isfile(store_pdg) and os.stat(store_pdg).st_size == 0:
-                    os.remove(store_pdg)
-        return dfg_nodes
+        if level == "pdg":
+            return store_representation(input_file, dfg_nodes, store_pdgs)
+        # if store_pdgs is not None:
+        #     store_pdg = os.path.join(store_pdgs, os.path.basename(input_file.replace('.js', '')))
+        #     # pickle.dump(dfg_nodes, open(store_pdg, 'wb'))
+        #     # I don't know why, but some PDGs lead to Segfault, this way it does not kill the
+        #     # current process at least
+        #     p = Process(target=pickle_dump_process, args=(dfg_nodes, store_pdg))
+        #     p.start()
+        #     p.join()
+        #     if p.exitcode != 0:
+        #         logging.error('Something wrong occurred to pickle the PDG of %s', store_pdg)
+        #         if os.path.isfile(store_pdg) and os.stat(store_pdg).st_size == 0:
+        #             os.remove(store_pdg)
+        # return dfg_nodes
     return None
 
 
-def handle_one_pdg(root, js, store_pdgs):
+def handle_one_pdg(root, js, store_pdgs, level="pdg"):
     """ Stores the PDG of js located in root, in store_pdgs. """
 
     benchmarks = dict()
     print(os.path.join(store_pdgs, js.replace('.js', '')))
-    get_data_flow(input_file=os.path.join(root, js), benchmarks=benchmarks,
+    get_data_flow(input_file=os.path.join(root, js), benchmarks=benchmarks, level=level,
                   store_pdgs=store_pdgs)
 
 
@@ -137,12 +161,12 @@ def worker(my_queue):
         try:
             item = my_queue.get(timeout=2)
             # print(item)
-            handle_one_pdg(item[0], item[1], item[2])
+            handle_one_pdg(item[0], item[1], item[2], item[3])
         except Exception as e:
             break
 
 
-def store_pdg_folder(folder_js):
+def store_pdg_folder(folder_js, level="pdg"):
     """
         Stores the PDGs of the JS files from folder_js.
 
@@ -168,7 +192,7 @@ def store_pdg_folder(folder_js):
 
     for root, _, files in os.walk(folder_js):
         for js in files:
-            my_queue.put([root, js, store_pdgs])
+            my_queue.put([root, js, store_pdgs, level])
             # time.sleep(0.1)  # Just enough to let the Queue finish
 
     for i in range(NUM_WORKERS):

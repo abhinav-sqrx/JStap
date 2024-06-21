@@ -1,11 +1,11 @@
 # JStap: A Static Pre-Filter for Malicious JavaScript Detection
 
-This repository contains the code for the [ACSAC'19 paper: "JStap: A Static Pre-Filter for Malicious JavaScript Detection"](https://swag.cispa.saarland/papers/fass2019jstap.pdf).  
+This repository contains the code for the [ACSAC'19 paper: "JStap: A Static Pre-Filter for Malicious JavaScript Detection"](https://swag.cispa.saarland/papers/fass2019jstap.pdf).
 Please note that in its current state, the code is a Poc and not a fully-fledged production-ready API.
 
 
 ## Summary
-JStap is a modular static malicious JavaScript detection system. Our detector is composed of ten modules, including five different ways of abstracting code (namely tokens, Abstract Syntax Tree (AST), Control Flow Graph (CFG), Program Dependency Graph considering data flow only (PDG-DFG), and PDG), and two ways of extracting features (leveraging n-grams, or Identifier values). Based on the frequency of these specific patterns, we train a random forest classifier for each module. 
+JStap is a modular static malicious JavaScript detection system. Our detector is composed of ten modules, including five different ways of abstracting code (namely tokens, Abstract Syntax Tree (AST), Control Flow Graph (CFG), Program Dependency Graph considering data flow only (PDG-DFG), and PDG), and two ways of extracting features (leveraging n-grams, or Identifier values). Based on the frequency of these specific patterns, we train a random forest classifier for each module.
 
 ## Setup
 
@@ -32,9 +32,9 @@ On the contrary for the token-based approach, you should give directly the folde
 
 ### PDGs Generation
 
-To generate the PDGs of the JS files (.js) from the folder FOLDER\_NAME, launch the following shell command from the ```pdg_generation``` folder location:
+To generate the PDGs of the JS files (.js) from the folder FOLDER\_NAME, with the 'LEVEL' ('ast', 'cfg', 'pdg') launch the following shell command from the ```pdg_generation``` folder location:
 ```
-$ python3 -c "from pdgs_generation import *; store_pdg_folder('FOLDER_NAME')"
+$ python3 -c "from pdgs_generation import *; store_pdg_folder('FOLDER_NAME', 'LEVEL')"
 ```
 
 The corresponding PDGs will be store in FOLDER\_NAME/Analysis/PDG.
@@ -44,10 +44,10 @@ Currently, we are using 2 CPUs for the PDGs generation process; this can be chan
 
 ### Learning: Building a Model
 
-To build a model from the folders BENIGN and MALICIOUS, containing JS files (for the token-based analysis) or the PDGs (for the other analyses), use the option --d BENIGN MALICIOUS and add their corresponding ground truth with --l benign malicious.  
-Select the features appearing in the training set with chi2 on 2 independent datasets: --vd BENIGN-VALIDATE MALICIOUS-VALIDATE with their corresponding ground truth --vl benign malicious.  
-Indicate your analysis level with --level followed by either 'tokens', 'ast', 'cfg', 'pdg-dfg' or 'pdg'.  
-Indicate the features that the analysis should use with --features followed by either 'ngrams', 'value'. You can choose where to store the features selected by chi2 with --analysis_path (default JStap/Analysis).  
+To build a model from the folders BENIGN and MALICIOUS, containing JS files (for the token-based analysis) or the PDGs (for the other analyses), use the option --d BENIGN MALICIOUS and add their corresponding ground truth with --l benign malicious.
+Select the features appearing in the training set with chi2 on 2 independent datasets: --vd BENIGN-VALIDATE MALICIOUS-VALIDATE with their corresponding ground truth --vl benign malicious.
+Indicate your analysis level with --level followed by either 'tokens', 'ast', 'cfg', 'pdg-dfg' or 'pdg'.
+Indicate the features that the analysis should use with --features followed by either 'ngrams', 'value'. You can choose where to store the features selected by chi2 with --analysis_path (default JStap/Analysis).
 You can choose the model's name with --mn (default being 'model') and its directory with --md (default JStap/Analysis).
 
 ```
@@ -56,7 +56,7 @@ $ python3 learner.py --d BENIGN/ MALICIOUS/ --l benign malicious --vd BENIGN-VAL
 
 
 ### Classification of Unknown JS Samples
-The process is similar for the classification process.  
+The process is similar for the classification process.
 To classify JS samples from the folders BENIGN2 and MALICIOUS2, use the option --d BENIGN2 MALICIOUS2. To load an existing model FEATURES_LEVEL to be used for the classification process, use the option --m FEATURES_LEVEL. Keep the same analysis level and features as for the classifier's training:
 
 ```
@@ -90,7 +90,7 @@ Launch the following python3 commands from the `pdg_generation` folder location 
 >>> pdg = get_data_flow('INPUT_FILE', benchmarks=dict(), save_path_ast='ast', save_path_cfg='cfg', save_path_pdg='pdg')
 ```
 
-Beware, graphviz may throw an error when the graphs are becoming too big.  
+Beware, graphviz may throw an error when the graphs are becoming too big.
 To merely display the graphs without storing them, use the value 'None'. Otherwise and per default, the value is False.
 
 

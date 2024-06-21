@@ -8,7 +8,6 @@
 # Analysis files
 Analysis
 samples
-scripts
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -90,6 +89,10 @@ target/
 
 # pyenv
 .python-version
+
+#venv
+.venv
+pyproject.toml
 
 # celery beat schedule file
 celerybeat-schedule

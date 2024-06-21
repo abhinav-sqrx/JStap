@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "escodegen": "^2.1.0"
+  }
+}
